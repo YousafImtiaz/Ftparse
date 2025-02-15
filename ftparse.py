@@ -12,16 +12,37 @@ def ftp_auto_login(ip, port):
         print(f"Trying anonymous login on {ip}:{port}")
         
         # Start the FTP client with the specified port
-        ftp = pexpect.spawn(f"ftp {ip} {port}")
+        ftp = pexpect.spawn(f"ftp {ip} {port}", encoding='utf-8', timeout=10)
         
         # Handle the login process
         ftp.expect("Name .*: ")
         ftp.sendline("anonymous")
         ftp.expect("Password: ")
         ftp.sendline("anonymous")
+        ftp.expect("ftp>")
         
-        # Hand over control to the user
+        # Print success message before running commands
         print("Anonymous login successful!")
+        
+        # Run 'pwd' command automatically after logging in
+        ftp.sendline("pwd")
+        ftp.expect("ftp>")
+        pwd_output = ftp.before.strip()
+        print(pwd_output)
+        
+        # Run 'ls' command automatically after logging in
+        ftp.sendline("ls")
+        ftp.expect("ftp>")
+        ls_output = ftp.before.strip()
+        
+        # Check if 'ls' command returned an empty response or access denied
+        if not ls_output or "access denied" in ls_output.lower():
+            print("No files found or access denied.")
+        else:
+            print(ls_output)  # Print the directory listing without extra spaces
+        
+        # Ensure smooth transition to interactive mode
+        ftp.sendline("")
         ftp.interact()  # Provides direct terminal interaction
     except KeyboardInterrupt:
         print("\nSession terminated by user.")
